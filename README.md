@@ -1,2 +1,6 @@
-# aptid-client-ts
-Apt.ID typescript SDK
+# TypeScript SDk for Apt.ID protocol
+```
+yarn install
+```
+
+# Example script on devnet

@@ -5,7 +5,8 @@
   "main": "src/index.ts",
   "scripts": {
     "local-aptid": "NODE_ENV=local ts-node cmd/apt_id_scripts.ts",
-    "devnet-aptid": "NODE_ENV=devnet ts-node cmd/apt_id_scripts.ts"
+    "devnet-aptid": "NODE_ENV=devnet ts-node cmd/apt_id_scripts.ts",
+    "example": "ts-node cmd/register_names_set_reverse_and_list.ts"
   },
   "keywords": [],
   "author": "",
