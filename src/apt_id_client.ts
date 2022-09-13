@@ -94,9 +94,13 @@ export class AptIDClient {
       return names.filter((n: Name) => {
         return parseInt(n.expiredAt) >= ((+ new Date()) / 1000)
       });
-    } catch (error) {
-      console.error("listNames", error)
-      return [];
+    } catch (e) {
+      if (e instanceof aptos.ApiError) {
+        return null
+      } else {
+        console.error("listNames", e)
+        throw e;
+      }
     }
   }
 
@@ -145,9 +149,13 @@ export class AptIDClient {
       } else {
         return null;
       }
-    } catch (error) {
-      console.error("getOwnerAndName", error)
-      return null;
+    } catch (e) {
+      if (e instanceof aptos.ApiError) {
+        return null
+      } else {
+        console.error("getOwnerAndName", e)
+        throw e;
+      }
     }
   }
 
