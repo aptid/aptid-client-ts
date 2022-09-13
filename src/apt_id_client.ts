@@ -94,7 +94,8 @@ export class AptIDClient {
       return names.filter((n: Name) => {
         return parseInt(n.expiredAt) >= ((+ new Date()) / 1000)
       });
-    } catch {
+    } catch (error) {
+      console.error("listNames", error)
       return [];
     }
   }
@@ -144,7 +145,8 @@ export class AptIDClient {
       } else {
         return null;
       }
-    } catch {
+    } catch (error) {
+      console.error("getOwnerAndName", error)
       return null;
     }
   }
