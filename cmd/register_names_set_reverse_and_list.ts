@@ -53,4 +53,10 @@ const faucetClient = new FaucetClient(NODE_URL, FAUCET_URL);
   // list all names registerd
   const rst = await devnetClients.aptid.listNames(alice.address())
   console.log(rst)
+
+  const shouldBeFalse = await devnetClients.aptid.isNameAvailable(alice_addr, "apt");
+  console.log("alice-addr is available: ", shouldBeFalse);
+
+  const shouldBeTrue = await devnetClients.aptid.isNameAvailable("nono-"+alice.address().toShortString(), "apt");
+  console.log("nono-addr has not been registered: ", shouldBeTrue);
 })();

@@ -115,8 +115,8 @@ export class AptIDClient {
     const tld_hash = AptIDClient.get_label_hash(tld);
     const name_lable_hash = AptIDClient.get_label_hash(name);
     const name_hash = keccak256.keccak256(
-      Buffer.concat([arrayify(tld_hash), arrayify(name_lable_hash)]
-      ));
+      new Uint8Array([...arrayify(tld_hash), ...arrayify(name_lable_hash)])
+    );
     return "0x" + name_hash;
   }
 
