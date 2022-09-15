@@ -5,17 +5,20 @@ import keccak256 from "js-sha3";
 import { arrayify } from "@ethersproject/bytes";
 import * as aptos from "aptos"
 
-export interface NameID {
+interface NameID {
   hash: string
 };
 
-export interface Name {
+
+interface Name {
   expired_at: string,
   name: string,
   parent: NameID,
   transferable: boolean,
   records: { head: [Object], inner: [Object], tail: [Object] }
 };
+
+export type { NameID, Name };
 
 /**
  * AptIDClient work with the main module of AptID protocol: apt_id::apt_id.
@@ -131,10 +134,10 @@ export class AptIDClient {
         }));
       return names.filter((n: Name | null) => {
         return n != null && parseInt(n.expired_at) >= ((+ new Date()) / 1000)
-      });
+      }) as Name[];
     } catch (e) {
       if (e instanceof aptos.ApiError) {
-        return null
+        return []
       } else {
         console.error("listNames", e)
         throw e;
