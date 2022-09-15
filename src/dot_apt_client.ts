@@ -3,7 +3,8 @@
 
 import * as aptos from "aptos"
 
-import { AptIDClient, Name } from "./apt_id_client"
+import { AptIDClient } from "./apt_id_client"
+import type { Name } from "./apt_id_client"
 
 interface DotAptView {
   apt_names: Name[],
