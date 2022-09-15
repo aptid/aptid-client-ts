@@ -1,31 +1,14 @@
-import { AptosClient, AptosAccount, FaucetClient, HexString } from "aptos";
+import assert from "assert"
+import dotenv from "dotenv";
+dotenv.config({ path: `.env.${process.env.NODE_ENV}` });
+export const NODE_URL = process.env.APTOS_NODE_URL;
+export const FAUCET_URL = process.env.APTOS_FAUCET_URL;
+assert(NODE_URL != undefined)
+assert(FAUCET_URL != undefined)
+
+import { AptosClient, AptosAccount, CoinClient, FaucetClient, HexString } from "aptos";
 import { AptIDClient, DotAptClient } from "../src";
-import * as DevnetAbis from "../src/abis/devnet/apt_id_abis";
-
-const NODE_URL = "https://fullnode.devnet.aptoslabs.com/v1";
-const FAUCET_URL = "https://faucet.devnet.aptoslabs.com"
-
-interface Config {
-  aptid_id: string,
-  dot_apt_tld: string,
-  abis: string[],
-};
-
-const devnet_config: Config = {
-  aptid_id: "0xc7050e4a5fce7292e0e7def652d70e79447fce2d6edb00a1e1fdb3d711978beb",
-  dot_apt_tld: "0xfb3e8bc44d50e040c39bb7dc4cef28e93078e7c6bd3db16b05cac2a41ce2b5d8",
-  abis: DevnetAbis.APT_ID_ABIS,
-};
-
-interface AptIDClients {
-  aptid: AptIDClient,
-  dotapt: DotAptClient,
-}
-const makeClients = (aptosClient: AptosClient, config: Config): AptIDClients => {
-  const aptid = new AptIDClient(client, config.abis, config.aptid_id);
-  const dotapt = new DotAptClient(client, config.abis, config.dot_apt_tld);
-  return { aptid, dotapt }
-}
+import { makeClients, AptIDClients, devnet_config, local_config } from "./config";
 
 // Create API and faucet clients.
 const client = new AptosClient(NODE_URL);

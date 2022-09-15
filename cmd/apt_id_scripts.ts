@@ -1,44 +1,14 @@
 import assert from "assert"
 import dotenv from "dotenv";
 dotenv.config({ path: `.env.${process.env.NODE_ENV}` });
-export const NODE_URL = process.env.APTOS_NODE_URL || "http://localhost:8080";
-export const FAUCET_URL = process.env.APTOS_FAUCET_URL || "http://localhost:8081";
+export const NODE_URL = process.env.APTOS_NODE_URL;
+export const FAUCET_URL = process.env.APTOS_FAUCET_URL;
 assert(NODE_URL != undefined)
 assert(FAUCET_URL != undefined)
 
 import { AptosClient, AptosAccount, CoinClient, FaucetClient, HexString } from "aptos";
 import { AptIDClient, DotAptClient } from "../src";
-import * as LocalAbis from "../src/abis/local/apt_id_abis";
-import * as DevnetAbis from "../src/abis/devnet/apt_id_abis";
-
-interface Config {
-  aptid_id: string,
-  dot_apt_tld: string,
-  abis: string[],
-};
-
-const local_addr = "0xf71cb5dc58c4290a2cc009ba5c87f389ca624e1d6b9b9135c2b4c43c1bb69cb6";
-const local_config: Config = {
-  aptid_id: local_addr,
-  dot_apt_tld: local_addr,
-  abis: LocalAbis.APT_ID_ABIS,
-};
-
-const devnet_config: Config = {
-  aptid_id: "0xc7050e4a5fce7292e0e7def652d70e79447fce2d6edb00a1e1fdb3d711978beb",
-  dot_apt_tld: "0xfb3e8bc44d50e040c39bb7dc4cef28e93078e7c6bd3db16b05cac2a41ce2b5d8",
-  abis: DevnetAbis.APT_ID_ABIS,
-};
-
-interface AptIDClients {
-  aptid: AptIDClient,
-  dotapt: DotAptClient,
-}
-const makeClients = (aptosClient: AptosClient, config: Config) : AptIDClients => {
-  const aptid = new AptIDClient(client, config.abis, config.aptid_id);
-  const dotapt = new DotAptClient(client, config.abis, config.dot_apt_tld);
-  return { aptid, dotapt }
-}
+import { makeClients, AptIDClients, devnet_config, local_config } from "./config";
 
 // Create API and faucet clients.
 const client = new AptosClient(NODE_URL);
@@ -97,6 +67,7 @@ const e2e_script = async (clients: AptIDClients) => {
 
   // init name store for bob
   await client.waitForTransaction(await clients.aptid.initialize_name_owner_store(bob));
+  // transfer to a name to bob
   await client.waitForTransaction(await clients.aptid.direct_transfer(alice, bob.address(), forBob, "apt"));
 
   const bob_names = await clients.aptid.listNames(bob.address());
@@ -104,9 +75,17 @@ const e2e_script = async (clients: AptIDClients) => {
 };
 
 (async () => {
+  console.log(NODE_URL);
   console.log(`mod publisher address: ${modAccount.address()}`);
-  const localClients = makeClients(client, local_config)
   // // run this once after contract reload
+  // const localClients = makeClients(client, local_config)
   // deployInit(localClients);
-  e2e_script(localClients);
+  // e2e_script(localClients);
+
+  // .... Aptos typescript SDK has a bug that if the account address
+  // has leading zeros, it will fail to find the corresponding function.
+  const devnetClients = makeClients(client, devnet_config)
+  // deployInit(devnetClients);
+  e2e_script(devnetClients);
+
 })();
