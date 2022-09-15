@@ -114,20 +114,23 @@ export class AptIDClient {
           ownerAddr,
           this.type_id("apt_id", "NameOwnerStore"),
         );
-
       const { handle }: { handle: string } = nameStore.data.names;
       const events = await this.aptosClient.getEventsByEventHandle(
         ownerAddr,
         `${this.type_id("apt_id", "NameOwnerStore")}`,
         "deposit_events");
-      let names: Name[] = await Promise.all(
+      let names: (Name | null)[] = await Promise.all<Name | null>(
         events.map(async (v) => {
           const hash = v.data.id.hash;
-          return await this.aptosClient.getTableItem(
-            handle, makeNameRequest(hash));
+          try {
+            return await this.aptosClient.getTableItem(
+              handle, makeNameRequest(hash));
+          } catch (e) {
+            return null;
+          }
         }));
-      return names.filter((n: Name) => {
-        return parseInt(n.expired_at) >= ((+ new Date()) / 1000)
+      return names.filter((n: Name | null) => {
+        return n != null && parseInt(n.expired_at) >= ((+ new Date()) / 1000)
       });
     } catch (e) {
       if (e instanceof aptos.ApiError) {
