@@ -5,14 +5,15 @@ import keccak256 from "js-sha3";
 import { arrayify } from "@ethersproject/bytes";
 import * as aptos from "aptos"
 
-interface NameID {
+export interface NameID {
   hash: string
 };
 
-interface Name {
-  expiredAt: string,
+export interface Name {
+  expired_at: string,
   name: string,
   parent: NameID,
+  transferable: boolean,
   records: { head: [Object], inner: [Object], tail: [Object] }
 };
 
@@ -61,6 +62,40 @@ export class AptIDClient {
   }
 
   /**
+   * register
+   *
+   * @param account user account
+   * @param amount the amount of aptos coin that the user is willing to pay.
+   * @param name  `name.apt` will be renewed.
+   *
+   * @returns The hash of the transaction submitted to the API
+   */
+  async initialize_name_owner_store(
+    account: aptos.AptosAccount,
+  ): Promise<string> {
+    const payload = this.txBuilder.buildTransactionPayload(
+      this.type_id("apt_id", "initialize_name_owner_store"),
+      [],
+      [],
+    );
+    return this.aptosClient.generateSignSubmitTransaction(account, payload);
+  }
+
+  async direct_transfer(
+    account: aptos.AptosAccount,
+    to: aptos.MaybeHexString,
+    name: string,
+    tld: string,
+  ): Promise<string> {
+    const payload = this.txBuilder.buildTransactionPayload(
+      this.type_id("apt_id", "direct_transfer"),
+      [],
+      [to, name, tld],
+    );
+    return this.aptosClient.generateSignSubmitTransaction(account, payload);
+  }
+
+  /**
    * Returns all names owned by the owner.
    */
   async listNames(ownerAddr: aptos.MaybeHexString): Promise<Name[]> {
@@ -92,7 +127,7 @@ export class AptIDClient {
             handle, makeNameRequest(hash));
         }));
       return names.filter((n: Name) => {
-        return parseInt(n.expiredAt) >= ((+ new Date()) / 1000)
+        return parseInt(n.expired_at) >= ((+ new Date()) / 1000)
       });
     } catch (e) {
       if (e instanceof aptos.ApiError) {

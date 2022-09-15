@@ -59,45 +59,54 @@ const deployInit = async (aptID: AptIDClients) => {
   console.log("onboard .reverse TLD registrar tx: ", tx)
 }
 
-const register_name_and_list = async (aptID: AptIDClients, names: string[]): Promise<HexString> => {
-  const alice = new AptosAccount();
-  await faucetClient.fundAccount(alice.address(), 500_000);
+const register_names = async (aptID: AptIDClients, account: any, names: string[]) => {
   for (let name of names) {
-    let hash = await aptID.dotapt.register(alice, 1, name);
+    let hash = await aptID.dotapt.register(account, 1, name);
     await client.waitForTransaction(hash);
     let tx = await client.getTransactionByHash(hash)
     console.log("name register tx: ", tx)
-    const rst = await aptID.aptid.listNames(alice.address())
-    console.log(rst)
   }
-  return alice.address()
 }
 
-// 0x670da70531c2c8f3a8e99a048bdd3cc9b3fe62e7a40ee591c0834865b2a3139f
+const e2e_script = async (clients: AptIDClients) => {
+  const alice = new AptosAccount();
+  await faucetClient.fundAccount(alice.address(), 500_000);
+  const bob = new AptosAccount();
+  await faucetClient.fundAccount(bob.address(), 500_000);
+
+  console.log("alice address: ", alice.address());
+  console.log("bob address: ", bob.address());
+
+  const short = alice.address().toShortString().slice(0, 7);
+  const bobShort = bob.address().toShortString().slice(0, 7);
+  const imalice = "Im:" + short;
+  const ilovealice = "ILove" + short;
+  const forBob = "For" + bobShort;
+  await register_names(clients, alice, [imalice, ilovealice, forBob]);
+
+  // renew
+  await client.waitForTransaction(await clients.dotapt.renew(alice, 1, ilovealice));
+
+  // set reversed record.
+  await client.waitForTransaction(await clients.dotapt.update_reversed_record(alice, imalice));
+
+  // list all names
+  const rst = await clients.aptid.listNames(alice.address());
+  const apt_view = clients.dotapt.apt_names_view(rst);
+  console.log(apt_view);
+
+  // init name store for bob
+  await client.waitForTransaction(await clients.aptid.initialize_name_owner_store(bob));
+  await client.waitForTransaction(await clients.aptid.direct_transfer(alice, bob.address(), forBob, "apt"));
+
+  const bob_names = await clients.aptid.listNames(bob.address());
+  console.log(bob_names);
+};
+
 (async () => {
   console.log(`mod publisher address: ${modAccount.address()}`);
   const localClients = makeClients(client, local_config)
-  // await deployInit(localClients);
-  // const isOk = await localClients.aptid.isNameAvailable("martin", "apt");
-  // console.log(isOk);
-
-  // const alice = new AptosAccount();
-  // await faucetClient.fundAccount(alice.address(), 500_000);
-  // let hash = await localClients.dotapt.register(alice, 1, "123123");
-  // await client.waitForTransaction(hash);
-  // let tx = await client.getTransactionByHash(hash)
-  // console.log("name register tx: ", tx)
-
-  // hash = await localClients.dotapt.update_reversed_record(alice, "martin");
-  // await client.waitForTransaction(hash);
-  // tx = await client.getTransactionByHash(hash)
-  // console.log("reverse register tx: ", tx)
-
-  // const devnetClients = makeClients(client, devnet_config)
-  // await deployInit(devnetClients);
-  // let rst = await localClients.aptid.listNames("0x670da70531c2c8f3a8e99a048bdd3cc9b3fe62e7a40ee591c0834865b2a3139f")
-  // console.log(rst, JSON.stringify(rst));
-  // let acc1 = await register_name_and_list(localClients, ["martin", "filco", "test"]);
-  // let acc1 = await register_name_and_list(devnetClients, ["martin", "filco", "test"]);
-  // console.log(acc1);
+  // // run this once after contract reload
+  // deployInit(localClients);
+  e2e_script(localClients);
 })();

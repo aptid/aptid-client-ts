@@ -3,6 +3,13 @@
 
 import * as aptos from "aptos"
 
+import { AptIDClient, Name } from "./apt_id_client"
+
+interface DotAptView {
+  apt_names: Name[],
+  reversed: Name | null,
+}
+
 export class DotAptClient {
   cli: aptos.AptosClient;
   txBuilder: aptos.TransactionBuilderABI;
@@ -27,11 +34,11 @@ export class DotAptClient {
     return this.dot_apt_mod_address + "::" + pkg + "::" + id;
   }
 
-   /**
-   * onboard both one_coin_registrar and the reverse registrar
-   *
-   * @param aptosClient apt_id::apt_id publisher account.
-   */
+  /**
+  * onboard both one_coin_registrar and the reverse registrar
+  *
+  * @param aptosClient apt_id::apt_id publisher account.
+  */
   public async onboard(account: aptos.AptosAccount) {
     let oneCoin = await this._onboard(account, "one_coin_registrar");
     await this.cli.waitForTransaction(oneCoin);
@@ -40,11 +47,11 @@ export class DotAptClient {
     return { oneCoin, reverse }
   }
 
-   /**
-   * remove both one_coin_registrar and the reverse registrar
-   *
-   * @param aptosClient apt_id::apt_id publisher account.
-   */
+  /**
+  * remove both one_coin_registrar and the reverse registrar
+  *
+  * @param aptosClient apt_id::apt_id publisher account.
+  */
   public async resign(account: aptos.AptosAccount) {
     let oneCoin = await this._resign(account, "one_coin_registrar");
     await this.cli.waitForTransaction(oneCoin);
@@ -103,6 +110,28 @@ export class DotAptClient {
    * register
    *
    * @param account user account
+   * @param amount the amount of aptos coin that the user is willing to pay.
+   * @param name  `name.apt` will be renewed.
+   *
+   * @returns The hash of the transaction submitted to the API
+   */
+  async renew(
+    account: aptos.AptosAccount,
+    amount: number,
+    name: string,
+  ): Promise<string> {
+    const payload = this.txBuilder.buildTransactionPayload(
+      this.type_id("one_coin_registrar", "renew_script"),
+      [],
+      [amount, name],
+    );
+    return this.cli.generateSignSubmitTransaction(account, payload);
+  }
+
+  /**
+   * update_reversed_record
+   *
+   * @param account user account
    * @param aptName The address.reverse will set its (.apt, TXT) resource record
    * to `aptName.apt`
    *
@@ -118,6 +147,36 @@ export class DotAptClient {
       [aptName],
     );
     return this.cli.generateSignSubmitTransaction(account, payload);
+  }
+
+  public apt_names_view(names: Name[]): DotAptView {
+    if (!names) {
+      return {
+        apt_names: [],
+        reversed: null,
+      }
+    }
+    let apt_names = names.filter((n: Name) => {
+      return n.parent.hash === AptIDClient.get_label_hash("apt");
+    });
+    let reversed_names = names.filter((n: Name) => {
+      return n.parent.hash === AptIDClient.get_label_hash("reverse");
+    });
+    let reversed_name = reversed_names.length > 0 ? reversed_names[0] : null;
+    if (reversed_name) {
+      // reversed record does not match name.
+      if (!apt_names.some((n: Name) => {
+        // TODO: support iterable_table.
+        // return n.name == reversed_name.records[[".apt", "TXT"];
+        return true;
+      })) {
+        reversed_name = null;
+      }
+    }
+    return {
+      apt_names: apt_names,
+      reversed: reversed_name,
+    };
   }
 
 }
