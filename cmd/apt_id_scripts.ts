@@ -7,7 +7,7 @@ assert(NODE_URL != undefined)
 assert(FAUCET_URL != undefined)
 
 import { AptosClient, AptosAccount, CoinClient, FaucetClient, HexString } from "aptos";
-import { AptIDClient, DotAptClient } from "../src";
+import { AptIDClient, DotAptClient, IterableTableClient } from "../src";
 import { makeClients, AptIDClients, devnet_config, local_config } from "./config";
 
 // Create API and faucet clients.
@@ -69,23 +69,30 @@ const e2e_script = async (clients: AptIDClients) => {
   await client.waitForTransaction(await clients.aptid.initialize_name_owner_store(bob));
   // transfer to a name to bob
   await client.waitForTransaction(await clients.aptid.direct_transfer(alice, bob.address(), forBob, "apt"));
+  await client.waitForTransaction(await clients.dotapt.update_reversed_record(bob, forBob));
+
+  // update records
+  await client.waitForTransaction(await clients.aptid.upsert_record(bob, forBob, "apt", "@", "A", 600, "192.168.0.1"))
+  await client.waitForTransaction(await clients.aptid.upsert_record(bob, forBob, "apt", "@", "MX", 600, "gmail"))
+  await client.waitForTransaction(await clients.aptid.upsert_record(bob, forBob, "apt", "@", "Address", 600, bob.address().toShortString()))
 
   const bob_names = await clients.aptid.listNames(bob.address());
-  console.log(bob_names);
+  console.log(JSON.stringify(bob_names, null, 2));
+  console.log(JSON.stringify(await clients.aptid.getRecords(bob_names[0])));
 };
 
 (async () => {
   console.log(NODE_URL);
   console.log(`mod publisher address: ${modAccount.address()}`);
   // // run this once after contract reload
-  // const localClients = makeClients(client, local_config)
-  // deployInit(localClients);
-  // e2e_script(localClients);
+  const localClients = makeClients(client, local_config)
+  deployInit(localClients);
+  e2e_script(localClients);
 
   // .... Aptos typescript SDK has a bug that if the account address
   // has leading zeros, it will fail to find the corresponding function.
-  const devnetClients = makeClients(client, devnet_config)
+  // const devnetClients = makeClients(client, devnet_config)
   // deployInit(devnetClients);
-  e2e_script(devnetClients);
+  // e2e_script(devnetClients);
 
 })();

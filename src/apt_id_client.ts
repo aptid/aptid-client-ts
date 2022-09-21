@@ -4,18 +4,27 @@
 import keccak256 from "js-sha3";
 import { arrayify } from "@ethersproject/bytes";
 import * as aptos from "aptos"
-
+import { IterableTable, IterableTableClient } from "./iterable_table"
 interface NameID {
   hash: string
 };
 
+interface RecordKey {
+  name: String,
+  type: String,
+}
+
+interface RecordValue {
+  ttl: number,
+  value: String,
+}
 
 interface Name {
   expired_at: string,
   name: string,
   parent: NameID,
   transferable: boolean,
-  records: { head: [Object], inner: [Object], tail: [Object] }
+  records: IterableTable<RecordKey, RecordValue>,
 };
 
 export type { NameID, Name };
@@ -28,7 +37,7 @@ export class AptIDClient {
   txBuilder: aptos.TransactionBuilderABI;
 
   /// address of the Apt.ID module
-  aptid_mod_address: string;
+  aptidModAddr: string;
 
   /**
    * Creates new AptID client
@@ -41,11 +50,19 @@ export class AptIDClient {
     this.aptosClient = aptosClient;
     this.txBuilder = new aptos.TransactionBuilderABI(
       abis.map((abi) => new aptos.HexString(abi).toUint8Array()));
-    this.aptid_mod_address = aptIDModAddr;
+    this.aptidModAddr = aptIDModAddr;
   }
 
-  private type_id(pkg: string, id: string) {
-    return this.aptid_mod_address + "::" + pkg + "::" + id;
+  private typeName(pkg: string, id: string) {
+    return this.aptidModAddr + "::" + pkg + "::" + id;
+  }
+
+  public recordKeyTypeName() {
+    return this.typeName("apt_id", "RecordKey");
+  }
+
+  public recordValueTypeName() {
+    return this.typeName("apt_id", "RecordValue");
   }
 
   /**
@@ -57,7 +74,7 @@ export class AptIDClient {
     account: aptos.AptosAccount,
   ): Promise<string> {
     const payload = this.txBuilder.buildTransactionPayload(
-      this.type_id("apt_id", "init"),
+      this.typeName("apt_id", "init"),
       [],
       [],
     );
@@ -77,7 +94,7 @@ export class AptIDClient {
     account: aptos.AptosAccount,
   ): Promise<string> {
     const payload = this.txBuilder.buildTransactionPayload(
-      this.type_id("apt_id", "initialize_name_owner_store"),
+      this.typeName("apt_id", "initialize_name_owner_store"),
       [],
       [],
     );
@@ -91,11 +108,42 @@ export class AptIDClient {
     tld: string,
   ): Promise<string> {
     const payload = this.txBuilder.buildTransactionPayload(
-      this.type_id("apt_id", "direct_transfer"),
+      this.typeName("apt_id", "direct_transfer"),
       [],
       [to, name, tld],
     );
     return this.aptosClient.generateSignSubmitTransaction(account, payload);
+  }
+
+  async upsert_record(
+    account: aptos.AptosAccount,
+    name: string,
+    tld: string,
+    recordName: string,
+    recordType: string,
+    ttl: number,
+    value: string
+  ): Promise<string> {
+    const payload = this.txBuilder.buildTransactionPayload(
+      this.typeName("apt_id", "upsert_record"),
+      [],
+      [
+        name,
+        tld,
+        recordName,
+        recordType,
+        ttl,
+        value
+      ],
+    );
+    return this.aptosClient.generateSignSubmitTransaction(account, payload);
+  }
+
+  // @returns empty array if the name cannot be found.
+  async getRecords(name: Name): Promise<[RecordKey, RecordValue][]> {
+    const tb = new IterableTableClient(
+      this.aptosClient, this.aptidModAddr, name.records, this.recordKeyTypeName(), this.recordValueTypeName());
+    return await tb.items();
   }
 
   /**
@@ -105,8 +153,8 @@ export class AptIDClient {
     try {
       const makeNameRequest = (hash: string): aptos.Types.TableItemRequest => {
         return {
-          key_type: this.type_id("apt_id", "NameID"),
-          value_type: this.type_id("apt_id", "Name"),
+          key_type: this.typeName("apt_id", "NameID"),
+          value_type: this.typeName("apt_id", "Name"),
           key: {
             "hash": hash,
           },
@@ -115,12 +163,12 @@ export class AptIDClient {
       const nameStore: { type: aptos.Types.MoveStructTag; data: any } = await
         this.aptosClient.getAccountResource(
           ownerAddr,
-          this.type_id("apt_id", "NameOwnerStore"),
+          this.typeName("apt_id", "NameOwnerStore"),
         );
       const { handle }: { handle: string } = nameStore.data.names;
       const events = await this.aptosClient.getEventsByEventHandle(
         ownerAddr,
-        `${this.type_id("apt_id", "NameOwnerStore")}`,
+        `${this.typeName("apt_id", "NameOwnerStore")}`,
         "deposit_events");
       let names: (Name | null)[] = await Promise.all<Name | null>(
         events.map(async (v) => {
@@ -171,12 +219,12 @@ export class AptIDClient {
       const hash = AptIDClient.get_name_hash(name, tld);
       const ownerListStore: { type: aptos.Types.MoveStructTag; data: any } = await
         this.aptosClient.getAccountResource(
-          this.aptid_mod_address,
-          this.type_id("apt_id", "OwnerListStore"),
+          this.aptidModAddr,
+          this.typeName("apt_id", "OwnerListStore"),
         );
       const { handle }: { handle: string } = ownerListStore.data.owners;
       const address = await this.aptosClient.getTableItem(handle, {
-        key_type: this.type_id("apt_id", "NameID"),
+        key_type: this.typeName("apt_id", "NameID"),
         value_type: "address",
         key: {
           "hash": hash,
