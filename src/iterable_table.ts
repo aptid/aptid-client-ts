@@ -100,8 +100,8 @@ export class IterableTableClient<K, V> {
     for (let i = 0; i < this.tb.inner.length; i++) {
       const k = some(curr);
       const v = await this.getIterableValue(k, version);
-      result.push([k, v.val]);
-      curr = v.next;
+      result.push([k, v!.val]);
+      curr = v!.next;
     }
     return result;
   }

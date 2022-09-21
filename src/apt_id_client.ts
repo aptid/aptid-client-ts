@@ -3,8 +3,9 @@
 
 import keccak256 from "js-sha3";
 import { arrayify } from "@ethersproject/bytes";
-import * as aptos from "aptos"
-import { IterableTable, IterableTableClient } from "./iterable_table"
+import * as aptos from "aptos";
+import { IterableTableClient } from "./iterable_table";
+import type { IterableTable } from "./iterable_table";
 
 interface TxExtraArgs {
   maxGasAmount?: aptos.BCS.Uint64;
