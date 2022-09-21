@@ -4,7 +4,9 @@
 import * as aptos from "aptos"
 
 import { AptIDClient } from "./apt_id_client"
-import type { Name } from "./apt_id_client"
+import type { Name, TxExtraArgs } from "./apt_id_client"
+
+const unitPrice = 1000;
 
 interface DotAptView {
   apt_names: Name[],
@@ -14,6 +16,7 @@ interface DotAptView {
 export class DotAptClient {
   cli: aptos.AptosClient;
   txBuilder: aptos.TransactionBuilderABI;
+  txArgs: TxExtraArgs;
 
   // address of the dot_apt module
   dot_apt_mod_address: string;
@@ -29,6 +32,10 @@ export class DotAptClient {
     this.txBuilder = new aptos.TransactionBuilderABI(
       abis.map((abi) => new aptos.HexString(abi).toUint8Array()));
     this.dot_apt_mod_address = dotAptModAddr;
+    this.txArgs = {
+      maxGasAmount: BigInt(10000),
+      gasUnitPrice: BigInt(100),
+    };
   }
 
   private type_id(pkg: string, id: string) {
@@ -70,7 +77,7 @@ export class DotAptClient {
       [],
       [],
     );
-    return this.cli.generateSignSubmitTransaction(account, payload);
+    return this.cli.generateSignSubmitTransaction(account, payload, this.txArgs);
   }
 
   private async _resign(
@@ -82,7 +89,7 @@ export class DotAptClient {
       [],
       [],
     );
-    return this.cli.generateSignSubmitTransaction(account, payload);
+    return this.cli.generateSignSubmitTransaction(account, payload, this.txArgs);
   }
 
   /**
@@ -99,12 +106,15 @@ export class DotAptClient {
     amount: number,
     name: string,
   ): Promise<string> {
+    if (amount < unitPrice) {
+      throw "amount too little";
+    }
     const payload = this.txBuilder.buildTransactionPayload(
       this.type_id("one_coin_registrar", "register_script"),
       [],
       [amount, name],
     );
-    return this.cli.generateSignSubmitTransaction(account, payload);
+    return this.cli.generateSignSubmitTransaction(account, payload, this.txArgs);
   }
 
   /**
@@ -121,12 +131,15 @@ export class DotAptClient {
     amount: number,
     name: string,
   ): Promise<string> {
+    if (amount < unitPrice) {
+      throw "amount too little";
+    }
     const payload = this.txBuilder.buildTransactionPayload(
       this.type_id("one_coin_registrar", "renew_script"),
       [],
       [amount, name],
     );
-    return this.cli.generateSignSubmitTransaction(account, payload);
+    return this.cli.generateSignSubmitTransaction(account, payload, this.txArgs);
   }
 
   /**
@@ -147,7 +160,7 @@ export class DotAptClient {
       [],
       [aptName],
     );
-    return this.cli.generateSignSubmitTransaction(account, payload);
+    return this.cli.generateSignSubmitTransaction(account, payload, this.txArgs);
   }
 
   public apt_names_view(names: Name[]): DotAptView {

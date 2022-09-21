@@ -7,7 +7,7 @@ assert(NODE_URL != undefined)
 assert(FAUCET_URL != undefined)
 
 import { AptosClient, AptosAccount, CoinClient, FaucetClient, HexString } from "aptos";
-import { AptIDClient, DotAptClient, IterableTableClient } from "../src";
+import { AptIDClient, DotAptClient } from "../src";
 import { makeClients, AptIDClients, devnet_config, local_config } from "./config";
 
 // Create API and faucet clients.
@@ -16,7 +16,14 @@ const faucetClient = new FaucetClient(NODE_URL, FAUCET_URL);
 const modAccount = AptosAccount.fromAptosAccountObject(
   { privateKeyHex: process.env.APTID_MOD_PK as string, });
 
+
+const faucetDevnet = async() => {
+  await faucetClient.fundAccount(devnet_config.aptid_id, 1000_000000);
+  await faucetClient.fundAccount(devnet_config.dot_apt_tld, 1000_000000);
+}
+
 const deployInit = async (aptID: AptIDClients) => {
+  await faucetClient.fundAccount(modAccount.address(), 1000_000000);
   let hash = await aptID.aptid.init_aptid(modAccount);
   await client.waitForTransaction(hash);
   let tx = await client.getTransactionByHash(hash)
@@ -31,18 +38,18 @@ const deployInit = async (aptID: AptIDClients) => {
 
 const register_names = async (aptID: AptIDClients, account: any, names: string[]) => {
   for (let name of names) {
-    let hash = await aptID.dotapt.register(account, 1, name);
+    let hash = await aptID.dotapt.register(account, 1000, name);
     await client.waitForTransaction(hash);
     let tx = await client.getTransactionByHash(hash)
-    console.log("name register tx: ", tx)
+    // console.log("name register tx: ", tx)
   }
 }
 
 const e2e_script = async (clients: AptIDClients) => {
   const alice = new AptosAccount();
-  await faucetClient.fundAccount(alice.address(), 500_000);
+  await faucetClient.fundAccount(alice.address(), 100_000000);
   const bob = new AptosAccount();
-  await faucetClient.fundAccount(bob.address(), 500_000);
+  await faucetClient.fundAccount(bob.address(), 100_000000);
 
   console.log("alice address: ", alice.address());
   console.log("bob address: ", bob.address());
@@ -55,15 +62,19 @@ const e2e_script = async (clients: AptIDClients) => {
   await register_names(clients, alice, [imalice, ilovealice, forBob]);
 
   // renew
-  await client.waitForTransaction(await clients.dotapt.renew(alice, 1, ilovealice));
+  await client.waitForTransaction(await clients.dotapt.renew(alice, 1000, ilovealice));
 
   // set reversed record.
-  await client.waitForTransaction(await clients.dotapt.update_reversed_record(alice, imalice));
+  let hash = await clients.dotapt.update_reversed_record(alice, imalice);
+  await client.waitForTransaction(hash);
+  let tx = await client.getTransactionByHash(hash)
+  // console.log("set reversed record tx: ", tx)
+
 
   // list all names
   const rst = await clients.aptid.listNames(alice.address());
   const apt_view = clients.dotapt.apt_names_view(rst);
-  console.log(apt_view);
+  console.log("alcie names in aptView, ", apt_view);
 
   // init name store for bob
   await client.waitForTransaction(await clients.aptid.initialize_name_owner_store(bob));
@@ -72,27 +83,27 @@ const e2e_script = async (clients: AptIDClients) => {
   await client.waitForTransaction(await clients.dotapt.update_reversed_record(bob, forBob));
 
   // update records
-  await client.waitForTransaction(await clients.aptid.upsert_record(bob, forBob, "apt", "@", "A", 600, "192.168.0.1"))
-  await client.waitForTransaction(await clients.aptid.upsert_record(bob, forBob, "apt", "@", "MX", 600, "gmail"))
-  await client.waitForTransaction(await clients.aptid.upsert_record(bob, forBob, "apt", "@", "Address", 600, bob.address().toShortString()))
+  await client.waitForTransaction(await clients.aptid.upsert_record(bob, "apt", forBob, "@", "A", 600, "192.168.0.1"))
+  await client.waitForTransaction(await clients.aptid.upsert_record(bob, "apt", forBob, "@", "MX", 600, "gmail"))
+  await client.waitForTransaction(await clients.aptid.upsert_record(bob, "apt", forBob, "@", "Address", 600, bob.address().toShortString()))
 
   const bob_names = await clients.aptid.listNames(bob.address());
-  console.log(JSON.stringify(bob_names, null, 2));
-  console.log(JSON.stringify(await clients.aptid.getRecords(bob_names[0])));
+  console.log("bob names", bob_names);
+  console.log("forBob name records: ", JSON.stringify(await clients.aptid.getRecords(bob_names[0])));
 };
 
 (async () => {
   console.log(NODE_URL);
   console.log(`mod publisher address: ${modAccount.address()}`);
   // // run this once after contract reload
-  const localClients = makeClients(client, local_config)
-  deployInit(localClients);
-  e2e_script(localClients);
+  // const localClients = makeClients(client, local_config)
+  // deployInit(localClients);
+  // e2e_script(localClients);
 
   // .... Aptos typescript SDK has a bug that if the account address
   // has leading zeros, it will fail to find the corresponding function.
+  // await faucetDevnet();
   // const devnetClients = makeClients(client, devnet_config)
   // deployInit(devnetClients);
   // e2e_script(devnetClients);
-
 })();

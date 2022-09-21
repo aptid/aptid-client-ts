@@ -5,6 +5,14 @@ import keccak256 from "js-sha3";
 import { arrayify } from "@ethersproject/bytes";
 import * as aptos from "aptos"
 import { IterableTable, IterableTableClient } from "./iterable_table"
+
+interface TxExtraArgs {
+  maxGasAmount?: aptos.BCS.Uint64;
+  gasUnitPrice?: aptos.BCS.Uint64;
+  expireTimestamp?: aptos.BCS.Uint64;
+}
+
+export type { TxExtraArgs }
 interface NameID {
   hash: string
 };
@@ -35,6 +43,7 @@ export type { NameID, Name };
 export class AptIDClient {
   aptosClient: aptos.AptosClient;
   txBuilder: aptos.TransactionBuilderABI;
+  txArgs: TxExtraArgs;
 
   /// address of the Apt.ID module
   aptidModAddr: string;
@@ -51,6 +60,10 @@ export class AptIDClient {
     this.txBuilder = new aptos.TransactionBuilderABI(
       abis.map((abi) => new aptos.HexString(abi).toUint8Array()));
     this.aptidModAddr = aptIDModAddr;
+    this.txArgs = {
+      maxGasAmount: BigInt(10000),
+      gasUnitPrice: BigInt(100),
+    };
   }
 
   private typeName(pkg: string, id: string) {
@@ -63,6 +76,14 @@ export class AptIDClient {
 
   public recordValueTypeName() {
     return this.typeName("apt_id", "RecordValue");
+  }
+
+  public NameIDTypeName() {
+    return this.typeName("apt_id", "NameID");
+  }
+
+  public NameTypeName() {
+    return this.typeName("apt_id", "Name");
   }
 
   /**
@@ -78,7 +99,7 @@ export class AptIDClient {
       [],
       [],
     );
-    return this.aptosClient.generateSignSubmitTransaction(account, payload);
+    return this.aptosClient.generateSignSubmitTransaction(account, payload, this.txArgs);
   }
 
   /**
@@ -98,7 +119,7 @@ export class AptIDClient {
       [],
       [],
     );
-    return this.aptosClient.generateSignSubmitTransaction(account, payload);
+    return this.aptosClient.generateSignSubmitTransaction(account, payload, this.txArgs);
   }
 
   async direct_transfer(
@@ -112,13 +133,13 @@ export class AptIDClient {
       [],
       [to, name, tld],
     );
-    return this.aptosClient.generateSignSubmitTransaction(account, payload);
+    return this.aptosClient.generateSignSubmitTransaction(account, payload, this.txArgs);
   }
 
   async upsert_record(
     account: aptos.AptosAccount,
-    name: string,
     tld: string,
+    name: string,
     recordName: string,
     recordType: string,
     ttl: number,
@@ -128,15 +149,15 @@ export class AptIDClient {
       this.typeName("apt_id", "upsert_record"),
       [],
       [
-        name,
         tld,
+        name,
         recordName,
         recordType,
         ttl,
         value
       ],
     );
-    return this.aptosClient.generateSignSubmitTransaction(account, payload);
+    return this.aptosClient.generateSignSubmitTransaction(account, payload, this.txArgs);
   }
 
   // @returns empty array if the name cannot be found.
@@ -151,38 +172,17 @@ export class AptIDClient {
    */
   async listNames(ownerAddr: aptos.MaybeHexString): Promise<Name[]> {
     try {
-      const makeNameRequest = (hash: string): aptos.Types.TableItemRequest => {
-        return {
-          key_type: this.typeName("apt_id", "NameID"),
-          value_type: this.typeName("apt_id", "Name"),
-          key: {
-            "hash": hash,
-          },
-        };
-      }
       const nameStore: { type: aptos.Types.MoveStructTag; data: any } = await
         this.aptosClient.getAccountResource(
           ownerAddr,
           this.typeName("apt_id", "NameOwnerStore"),
         );
-      const { handle }: { handle: string } = nameStore.data.names;
-      const events = await this.aptosClient.getEventsByEventHandle(
-        ownerAddr,
-        `${this.typeName("apt_id", "NameOwnerStore")}`,
-        "deposit_events");
-      let names: (Name | null)[] = await Promise.all<Name | null>(
-        events.map(async (v) => {
-          const hash = v.data.id.hash;
-          try {
-            return await this.aptosClient.getTableItem(
-              handle, makeNameRequest(hash));
-          } catch (e) {
-            return null;
-          }
-        }));
-      return names.filter((n: Name | null) => {
-        return n != null && parseInt(n.expired_at) >= ((+ new Date()) / 1000)
-      }) as Name[];
+      const namesCli = new IterableTableClient<NameID, Name>(
+        this.aptosClient, this.aptidModAddr,
+        nameStore.data.names, this.NameIDTypeName(), this.NameTypeName());
+      const nameItems = await namesCli.items();
+      const names: Name[] = nameItems.map((idName) => idName[1]);
+      return names;
     } catch (e) {
       if (e instanceof aptos.ApiError) {
         return []
@@ -224,7 +224,7 @@ export class AptIDClient {
         );
       const { handle }: { handle: string } = ownerListStore.data.owners;
       const address = await this.aptosClient.getTableItem(handle, {
-        key_type: this.typeName("apt_id", "NameID"),
+        key_type: this.NameIDTypeName(),
         value_type: "address",
         key: {
           "hash": hash,
