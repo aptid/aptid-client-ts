@@ -8,7 +8,7 @@
     "devnet-aptid": "NODE_ENV=devnet ts-node cmd/apt_id_scripts.ts",
     "example": "NODE_ENV=devnet ts-node cmd/register_names_set_reverse_and_list.ts",
     "build": "tsc",
-    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
+    "format": "prettier --write \"src/**/*.ts\" ",
     "lint": "eslint . --ext .ts",
     "lint-fix": "eslint . --ext .ts --fix"
   },

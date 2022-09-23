@@ -1,16 +1,16 @@
 // Copyright (c) Apt.ID
 // SPDX-License-Identifier: MIT
 
-import * as aptos from "aptos"
+import * as aptos from 'aptos';
 
-import { AptIDClient } from "./apt_id_client"
-import type { Name, TxExtraArgs } from "./apt_id_client"
+import { AptIDClient } from './apt_id_client';
+import type { Name, TxExtraArgs } from './apt_id_client';
 
 const unitPrice = 1000;
 
 interface DotAptView {
-  apt_names: Name[],
-  reversed: Name | null,
+  apt_names: Name[];
+  reversed: Name | null;
 }
 
 export class DotAptClient {
@@ -29,8 +29,7 @@ export class DotAptClient {
    */
   constructor(aptosClient: aptos.AptosClient, abis: string[], dotAptModAddr: string) {
     this.cli = aptosClient;
-    this.txBuilder = new aptos.TransactionBuilderABI(
-      abis.map((abi) => new aptos.HexString(abi).toUint8Array()));
+    this.txBuilder = new aptos.TransactionBuilderABI(abis.map((abi) => new aptos.HexString(abi).toUint8Array()));
     this.dot_apt_mod_address = dotAptModAddr;
     this.txArgs = {
       maxGasAmount: BigInt(10000),
@@ -39,56 +38,42 @@ export class DotAptClient {
   }
 
   private typeID(pkg: string, id: string) {
-    return this.dot_apt_mod_address + "::" + pkg + "::" + id;
+    return this.dot_apt_mod_address + '::' + pkg + '::' + id;
   }
 
   /**
-  * onboard both one_coin_registrar and the reverse registrar
-  *
-  * @param aptosClient apt_id::apt_id publisher account.
-  */
+   * onboard both one_coin_registrar and the reverse registrar
+   *
+   * @param aptosClient apt_id::apt_id publisher account.
+   */
   public async onboard(account: aptos.AptosAccount) {
-    const oneCoin = await this._onboard(account, "one_coin_registrar");
+    const oneCoin = await this._onboard(account, 'one_coin_registrar');
     await this.cli.waitForTransaction(oneCoin);
-    const reverse = await this._onboard(account, "reverse_registrar");
+    const reverse = await this._onboard(account, 'reverse_registrar');
     await this.cli.waitForTransaction(reverse);
-    return { oneCoin, reverse }
+    return { oneCoin, reverse };
   }
 
   /**
-  * remove both one_coin_registrar and the reverse registrar
-  *
-  * @param aptosClient apt_id::apt_id publisher account.
-  */
+   * remove both one_coin_registrar and the reverse registrar
+   *
+   * @param aptosClient apt_id::apt_id publisher account.
+   */
   public async resign(account: aptos.AptosAccount) {
-    const oneCoin = await this._resign(account, "one_coin_registrar");
+    const oneCoin = await this._resign(account, 'one_coin_registrar');
     await this.cli.waitForTransaction(oneCoin);
-    const reverse = await this._resign(account, "reverse_registrar");
+    const reverse = await this._resign(account, 'reverse_registrar');
     await this.cli.waitForTransaction(reverse);
-    return { oneCoin, reverse }
+    return { oneCoin, reverse };
   }
 
-  private async _onboard(
-    account: aptos.AptosAccount,
-    mod: string,
-  ): Promise<string> {
-    const payload = this.txBuilder.buildTransactionPayload(
-      this.typeID(mod, "onboard"),
-      [],
-      [],
-    );
+  private async _onboard(account: aptos.AptosAccount, mod: string): Promise<string> {
+    const payload = this.txBuilder.buildTransactionPayload(this.typeID(mod, 'onboard'), [], []);
     return this.cli.generateSignSubmitTransaction(account, payload, this.txArgs);
   }
 
-  private async _resign(
-    account: aptos.AptosAccount,
-    mod: string,
-  ): Promise<string> {
-    const payload = this.txBuilder.buildTransactionPayload(
-      this.typeID(mod, "resign"),
-      [],
-      [],
-    );
+  private async _resign(account: aptos.AptosAccount, mod: string): Promise<string> {
+    const payload = this.txBuilder.buildTransactionPayload(this.typeID(mod, 'resign'), [], []);
     return this.cli.generateSignSubmitTransaction(account, payload, this.txArgs);
   }
 
@@ -101,16 +86,12 @@ export class DotAptClient {
    *
    * @returns The hash of the transaction submitted to the API
    */
-  async register(
-    account: aptos.AptosAccount,
-    amount: number,
-    name: string,
-  ): Promise<string> {
+  async register(account: aptos.AptosAccount, amount: number, name: string): Promise<string> {
     if (amount < unitPrice) {
-      throw "amount too little";
+      throw 'amount too little';
     }
     const payload = this.txBuilder.buildTransactionPayload(
-      this.typeID("one_coin_registrar", "register_script"),
+      this.typeID('one_coin_registrar', 'register_script'),
       [],
       [amount, name],
     );
@@ -126,16 +107,12 @@ export class DotAptClient {
    *
    * @returns The hash of the transaction submitted to the API
    */
-  async renew(
-    account: aptos.AptosAccount,
-    amount: number,
-    name: string,
-  ): Promise<string> {
+  async renew(account: aptos.AptosAccount, amount: number, name: string): Promise<string> {
     if (amount < unitPrice) {
-      throw "amount too little";
+      throw 'amount too little';
     }
     const payload = this.txBuilder.buildTransactionPayload(
-      this.typeID("one_coin_registrar", "renew_script"),
+      this.typeID('one_coin_registrar', 'renew_script'),
       [],
       [amount, name],
     );
@@ -151,12 +128,9 @@ export class DotAptClient {
    *
    * @returns The hash of the transaction submitted to the API
    */
-  async updateReversedRecord(
-    account: aptos.AptosAccount,
-    aptName: string,
-  ): Promise<string> {
+  async updateReversedRecord(account: aptos.AptosAccount, aptName: string): Promise<string> {
     const payload = this.txBuilder.buildTransactionPayload(
-      this.typeID("reverse_registrar", "set_reversed_name_script"),
+      this.typeID('reverse_registrar', 'set_reversed_name_script'),
       [],
       [aptName],
     );
@@ -168,13 +142,13 @@ export class DotAptClient {
       return {
         apt_names: [],
         reversed: null,
-      }
+      };
     }
     const apt_names = names.filter((n: Name) => {
-      return n.parent.hash === AptIDClient.getLableHash("apt");
+      return n.parent.hash === AptIDClient.getLableHash('apt');
     });
     const reversed_names = names.filter((n: Name) => {
-      return n.parent.hash === AptIDClient.getLableHash("reverse");
+      return n.parent.hash === AptIDClient.getLableHash('reverse');
     });
     const reversed_name = reversed_names.length > 0 ? reversed_names[0] : null;
     // if (reversed_name) {
@@ -192,5 +166,4 @@ export class DotAptClient {
       reversed: reversed_name,
     };
   }
-
 }
