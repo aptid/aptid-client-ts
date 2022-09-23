@@ -1,18 +1,25 @@
 // Copyright (c) Apt.ID
 // SPDX-License-Identifier: MIT
 
-import { AptIDClient } from './apt_id_client';
-import type { Name, NameID, RecordKey, RecordValue } from './apt_id_client';
-import { DotAptClient } from './dot_apt_client';
-import { IterableTableClient } from './iterable_table';
-import * as LocalAbis from './abis/local/apt_id_abis';
-import * as DevnetAbis from './abis/devnet/apt_id_abis';
-import { AptIDClients, makeDevnetClients, makeTestnetClients, makeLocalClients  } from './config';
+import type { Name, NameID, RecordKey, RecordValue, WalletPayloadArgs } from './common';
+export type { Name, NameID, RecordKey, RecordValue, WalletPayloadArgs };
 
+import { AptIDClient } from './apt_id_client';
 export { AptIDClient };
-export type { Name, NameID, RecordKey, RecordValue };
+
+import { DotAptClient } from './dot_apt_client';
 export { DotAptClient };
-export { LocalAbis };
-export { DevnetAbis };
+import type { DotAptView } from './dot_apt_client';
+export type { DotAptView };
+
+import { IterableTableClient } from './iterable_table';
 export { IterableTableClient };
-export { AptIDClients,  makeDevnetClients, makeTestnetClients, makeLocalClients };
+
+import * as LocalAbis from './abis/local/apt_id_abis';
+export { LocalAbis };
+
+import * as DevnetAbis from './abis/devnet/apt_id_abis';
+export { DevnetAbis };
+
+import { AptIDClients, makeDevnetClients, makeTestnetClients, makeLocalClients } from './config';
+export { AptIDClients, makeDevnetClients, makeTestnetClients, makeLocalClients };

@@ -5,38 +5,7 @@ import keccak256 from 'js-sha3';
 import { arrayify } from '@ethersproject/bytes';
 import * as aptos from 'aptos';
 import { IterableTableClient } from './iterable_table';
-import type { IterableTable } from './iterable_table';
-
-interface TxExtraArgs {
-  maxGasAmount?: aptos.BCS.Uint64;
-  gasUnitPrice?: aptos.BCS.Uint64;
-  expireTimestamp?: aptos.BCS.Uint64;
-}
-
-export type { TxExtraArgs };
-interface NameID {
-  hash: string;
-}
-
-interface RecordKey {
-  name: string;
-  type: string;
-}
-
-interface RecordValue {
-  ttl: number;
-  value: string;
-}
-
-interface Name {
-  expired_at: string;
-  name: string;
-  parent: NameID;
-  transferable: boolean;
-  records: IterableTable<RecordKey, RecordValue>;
-}
-
-export type { NameID, Name, RecordKey, RecordValue };
+import { Name, NameID, RecordKey, RecordValue, TxExtraArgs, WalletPayloadArgs } from './common';
 
 /**
  * AptIDClient work with the main module of AptID protocol: apt_id::apt_id.
@@ -66,24 +35,24 @@ export class AptIDClient {
     };
   }
 
-  private typeName(pkg: string, id: string) {
-    return this.aptidModAddr + '::' + pkg + '::' + id;
+  private typeName(id: string) {
+    return this.aptidModAddr + '::' + 'apt_id' + '::' + id;
   }
 
   public recordKeyTypeName() {
-    return this.typeName('apt_id', 'RecordKey');
+    return this.typeName('RecordKey');
   }
 
   public recordValueTypeName() {
-    return this.typeName('apt_id', 'RecordValue');
+    return this.typeName('RecordValue');
   }
 
   public NameIDTypeName() {
-    return this.typeName('apt_id', 'NameID');
+    return this.typeName('NameID');
   }
 
   public NameTypeName() {
-    return this.typeName('apt_id', 'Name');
+    return this.typeName('Name');
   }
 
   /**
@@ -92,7 +61,7 @@ export class AptIDClient {
    * @param account publisher account of apt_id.
    */
   public async initAptID(account: aptos.AptosAccount): Promise<string> {
-    const payload = this.txBuilder.buildTransactionPayload(this.typeName('apt_id', 'init'), [], []);
+    const payload = this.txBuilder.buildTransactionPayload(this.typeName('init'), [], []);
     return this.aptosClient.generateSignSubmitTransaction(account, payload, this.txArgs);
   }
 
@@ -106,8 +75,17 @@ export class AptIDClient {
    * @returns The hash of the transaction submitted to the API
    */
   async initNameOwnerStore(account: aptos.AptosAccount): Promise<string> {
-    const payload = this.txBuilder.buildTransactionPayload(this.typeName('apt_id', 'initialize_name_owner_store'), [], []);
+    const payload = this.txBuilder.buildTransactionPayload(this.typeName('initialize_name_owner_store'), [], []);
     return this.aptosClient.generateSignSubmitTransaction(account, payload, this.txArgs);
+  }
+
+  public msgInitNameOwnerStore(): WalletPayloadArgs {
+    return {
+      arguments: [],
+      function: this.typeName('initialize_name_owner_store'),
+      type: 'entry_function_payload',
+      type_arguments: [],
+    };
   }
 
   async directTransfer(
@@ -116,12 +94,17 @@ export class AptIDClient {
     name: string,
     tld: string,
   ): Promise<string> {
-    const payload = this.txBuilder.buildTransactionPayload(
-      this.typeName('apt_id', 'direct_transfer'),
-      [],
-      [to, name, tld],
-    );
+    const payload = this.txBuilder.buildTransactionPayload(this.typeName('direct_transfer'), [], [to, name, tld]);
     return this.aptosClient.generateSignSubmitTransaction(account, payload, this.txArgs);
+  }
+
+  public msgDirectTransfer(receiver: aptos.MaybeHexString, name: string, tld: string): WalletPayloadArgs {
+    return {
+      arguments: [receiver, name, tld],
+      function: this.typeName('direct_transfer'),
+      type: 'entry_function_payload',
+      type_arguments: [],
+    };
   }
 
   async upsertRecrod(
@@ -134,11 +117,27 @@ export class AptIDClient {
     value: string,
   ): Promise<string> {
     const payload = this.txBuilder.buildTransactionPayload(
-      this.typeName('apt_id', 'upsert_record'),
+      this.typeName('upsert_record'),
       [],
       [tld, name, recordName, recordType, ttl, value],
     );
     return this.aptosClient.generateSignSubmitTransaction(account, payload, this.txArgs);
+  }
+
+  public msgUpsertRecrod(
+    tld: string,
+    name: string,
+    recordName: string,
+    recordType: string,
+    value: string,
+    ttl: number,
+  ): WalletPayloadArgs {
+    return {
+      arguments: [tld, name, recordName, recordType, ttl, value],
+      function: this.typeName('upsert_record'),
+      type: 'entry_function_payload',
+      type_arguments: [],
+    };
   }
 
   // @returns empty array if the name cannot be found.
@@ -154,13 +153,13 @@ export class AptIDClient {
   }
 
   /**
-   * Returns all names owned by the owner.
+   * Returns all names owned by the owner, including the reversed mapping name.
    */
   async listNames(ownerAddr: aptos.MaybeHexString): Promise<Name[]> {
     try {
       const nameStore: { type: aptos.Types.MoveStructTag; data: any } = await this.aptosClient.getAccountResource(
         ownerAddr,
-        this.typeName('apt_id', 'NameOwnerStore'),
+        this.typeName('NameOwnerStore'),
       );
       const namesCli = new IterableTableClient<NameID, Name>(
         this.aptosClient,
@@ -205,7 +204,7 @@ export class AptIDClient {
       const hash = AptIDClient.getNameHash(name, tld);
       const ownerListStore: { type: aptos.Types.MoveStructTag; data: any } = await this.aptosClient.getAccountResource(
         this.aptidModAddr,
-        this.typeName('apt_id', 'OwnerListStore'),
+        this.typeName('OwnerListStore'),
       );
       const { handle }: { handle: string } = ownerListStore.data.owners;
       const address = await this.aptosClient.getTableItem(handle, {

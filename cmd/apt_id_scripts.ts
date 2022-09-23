@@ -74,7 +74,7 @@ const e2e_script = async (clients: AptIDClients) => {
 
   // list all names
   const rst = await clients.aptid.listNames(alice.address());
-  const apt_view = clients.dotapt.apt_names_view(rst);
+  const apt_view = clients.dotapt.aptNamesView(rst);
   console.log("alcie names in aptView, ", apt_view);
 
   // init name store for bob

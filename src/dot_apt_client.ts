@@ -4,7 +4,7 @@
 import * as aptos from 'aptos';
 
 import { AptIDClient } from './apt_id_client';
-import type { Name, TxExtraArgs } from './apt_id_client';
+import type { Name, TxExtraArgs, WalletPayloadArgs } from './common';
 
 const unitPrice = 1000;
 
@@ -12,6 +12,8 @@ interface DotAptView {
   apt_names: Name[];
   reversed: Name | null;
 }
+
+export type { DotAptView };
 
 export class DotAptClient {
   cli: aptos.AptosClient;
@@ -98,6 +100,15 @@ export class DotAptClient {
     return this.cli.generateSignSubmitTransaction(account, payload, this.txArgs);
   }
 
+  public msgRegister(coin: number, name: string): WalletPayloadArgs {
+    return {
+      arguments: [coin, name],
+      function: this.typeID('one_coin_registrar', 'register_script'),
+      type: 'entry_function_payload',
+      type_arguments: [],
+    };
+  }
+
   /**
    * register
    *
@@ -119,6 +130,15 @@ export class DotAptClient {
     return this.cli.generateSignSubmitTransaction(account, payload, this.txArgs);
   }
 
+  public msgRenew(coin: number, name: string): WalletPayloadArgs {
+    return {
+      arguments: [coin, name],
+      function: this.typeID('one_coin_registrar', 'renew_script'),
+      type: 'entry_function_payload',
+      type_arguments: [],
+    };
+  }
+
   /**
    * updateReversedRecord
    *
@@ -137,7 +157,16 @@ export class DotAptClient {
     return this.cli.generateSignSubmitTransaction(account, payload, this.txArgs);
   }
 
-  public apt_names_view(names: Name[]): DotAptView {
+  public msgUpdateReversedRecord(aptName: string): WalletPayloadArgs {
+    return {
+      arguments: [aptName],
+      function: this.typeID('reverse_registrar', 'set_reversed_name_script'),
+      type: 'entry_function_payload',
+      type_arguments: [],
+    };
+  }
+
+  public aptNamesView(names: Name[]): DotAptView {
     if (!names) {
       return {
         apt_names: [],
@@ -151,10 +180,10 @@ export class DotAptClient {
       return n.parent.hash === AptIDClient.getLableHash('reverse');
     });
     const reversed_name = reversed_names.length > 0 ? reversed_names[0] : null;
+    // TODO: check if reversed name matches the primary address
     // if (reversed_name) {
     //   // reversed record does not match name.
     //   if (!apt_names.some((n: Name) => {
-    //     // TODO: support iterable_table.
     //     // return n.name == reversed_name.records[[".apt", "TXT"];
     //     return true;
     //   })) {

@@ -1,15 +1,26 @@
 # TypeScript SDk for Apt.ID protocol
+NOTE: STILL UNDER DEVELOPOMENT, API BREAKING CHANGES CAN HAPPEN.
+This SDK includes two clients that can read and write two major modules:
++ AptIDClient: core name service contract. Functions: name lookup, name transfer,
+  records update, and records lookup.
++ DotAptClient: the current active registrar for testing purpose: register or renew
+  a name with a fixed pricing: 1000 aptos_coin amount (amount in Move) for 1 day.
+
+## Initialize Clients
+## Read
+TODO
+## Write
+TODO
+
+## Install
+npm:
 ```
 npm i aptid-ts
 ```
-
-##
-+ `class AptIDClient`: client for apt_id module.
-  + `listNames(ownerAddr: aptos.MaybeHexString): Promise<Name[]>`: list all names owned by the address.
-  + `getOwnerAndName(name: string, tld: string): Promise<[string, Name] | null>`: return the owner and the name of `name.tld`.
-+ `class DotAptClient`: client for misc registrars.
-  + `register(account: aptos.AptosAccount, amount: number, name: string): Promise<string>`: register a .apt name.
-  + `updateReversedRecord(account: aptos.AptosAccount, aptName: string)`: update reversed record for account to a .apt domain.
+yarn:
+```
+yarn install aptid-ts
+```
 
 # Example
 This is an example of using this SDk to register names on **devnet**, you can run it by `yarn example`.
@@ -35,9 +46,3 @@ This is an example of using this SDk to register names on **devnet**, you can ru
   const rst = await devnetClients.aptid.listNames(alice.address())
   console.log(rst)
 ```
-
-# Setup
-```
-yarn install
-```
-
