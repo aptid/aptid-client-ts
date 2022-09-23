@@ -106,7 +106,7 @@ export class AptIDClient {
    * @returns The hash of the transaction submitted to the API
    */
   async initNameOwnerStore(account: aptos.AptosAccount): Promise<string> {
-    const payload = this.txBuilder.buildTransactionPayload(this.typeName('apt_id', 'initNameOwnerStore'), [], []);
+    const payload = this.txBuilder.buildTransactionPayload(this.typeName('apt_id', 'initialize_name_owner_store'), [], []);
     return this.aptosClient.generateSignSubmitTransaction(account, payload, this.txArgs);
   }
 
