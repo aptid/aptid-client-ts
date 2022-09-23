@@ -1,5 +1,9 @@
 # TypeScript SDk for Apt.ID protocol
-This is a draft implementation in TypeScript for Apt.ID.
+```
+npm i aptid-ts
+```
+
+##
 + `class AptIDClient`: client for apt_id module.
   + `listNames(ownerAddr: aptos.MaybeHexString): Promise<Name[]>`: list all names owned by the address.
   + `getOwnerAndName(name: string, tld: string): Promise<[string, Name] | null>`: return the owner and the name of `name.tld`.

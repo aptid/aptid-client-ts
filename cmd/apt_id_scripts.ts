@@ -7,8 +7,8 @@ assert(NODE_URL != undefined)
 assert(FAUCET_URL != undefined)
 
 import { AptosClient, AptosAccount, CoinClient, FaucetClient, HexString } from "aptos";
-import { AptIDClient, DotAptClient } from "../src";
-import { makeClients, AptIDClients, devnet_config, local_config } from "./config";
+import { AptIDClient, DotAptClient, makeDevnetClients ,AptIDClients, makeLocalClients  } from "../src";
+import { devnetConfig } from "../src/config";
 
 // Create API and faucet clients.
 const client = new AptosClient(NODE_URL);
@@ -18,8 +18,8 @@ const modAccount = AptosAccount.fromAptosAccountObject(
 
 
 const faucetDevnet = async() => {
-  await faucetClient.fundAccount(devnet_config.aptid_id, 1000_000000);
-  await faucetClient.fundAccount(devnet_config.dot_apt_tld, 1000_000000);
+  await faucetClient.fundAccount(devnetConfig.aptidModAddr, 1000_000000);
+  await faucetClient.fundAccount(devnetConfig.dotAptTLDModAddr, 1000_000000);
 }
 
 const deployInit = async (aptID: AptIDClients) => {
@@ -97,14 +97,12 @@ const e2e_script = async (clients: AptIDClients) => {
   console.log(NODE_URL);
   console.log(`mod publisher address: ${modAccount.address()}`);
   // // run this once after contract reload
-  // const localClients = makeClients(client, local_config)
+  // const localClients = makeLocalClients(NODE_URL)
   // deployInit(localClients);
   // e2e_script(localClients);
 
-  // .... Aptos typescript SDK has a bug that if the account address
-  // has leading zeros, it will fail to find the corresponding function.
   // await faucetDevnet();
-  const devnetClients = makeClients(client, devnet_config)
-  // deployInit(devnetClients);
+  const devnetClients = makeDevnetClients(NODE_URL)
+  deployInit(devnetClients);
   e2e_script(devnetClients);
 })();

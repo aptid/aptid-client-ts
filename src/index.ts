@@ -7,6 +7,7 @@ import { DotAptClient } from './dot_apt_client';
 import { IterableTableClient } from './iterable_table';
 import * as LocalAbis from './abis/local/apt_id_abis';
 import * as DevnetAbis from './abis/devnet/apt_id_abis';
+import { AptIDClients, makeDevnetClients, makeTestnetClients, makeLocalClients  } from './config';
 
 export { AptIDClient };
 export type { Name, NameID, RecordKey, RecordValue };
@@ -14,3 +15,4 @@ export { DotAptClient };
 export { LocalAbis };
 export { DevnetAbis };
 export { IterableTableClient };
+export { AptIDClients,  makeDevnetClients, makeTestnetClients, makeLocalClients };

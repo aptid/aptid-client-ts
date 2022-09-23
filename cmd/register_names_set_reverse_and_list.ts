@@ -6,16 +6,15 @@ export const FAUCET_URL = process.env.APTOS_FAUCET_URL;
 assert(NODE_URL != undefined)
 assert(FAUCET_URL != undefined)
 
-import { AptosClient, AptosAccount, CoinClient, FaucetClient, HexString } from "aptos";
-import { AptIDClient, DotAptClient } from "../src";
-import { makeClients, AptIDClients, devnet_config, local_config } from "./config";
+import { AptosClient, AptosAccount, FaucetClient } from "aptos";
+import { makeDevnetClients } from "../src";
 
 // Create API and faucet clients.
 const client = new AptosClient(NODE_URL);
 const faucetClient = new FaucetClient(NODE_URL, FAUCET_URL);
 
 (async () => {
-  const devnetClients = makeClients(client, devnet_config)
+  const devnetClients = makeDevnetClients(NODE_URL);
   const alice = new AptosAccount();
   await faucetClient.fundAccount(alice.address(), 500_000);
 
