@@ -36,7 +36,7 @@ interface Name {
   records: IterableTable<RecordKey, RecordValue>,
 };
 
-export type { NameID, Name };
+export type { NameID, Name, RecordKey, RecordValue };
 
 /**
  * AptIDClient work with the main module of AptID protocol: apt_id::apt_id.
@@ -92,7 +92,7 @@ export class AptIDClient {
    *
    * @param account publisher account of apt_id.
    */
-  public async init_aptid(
+  public async initAptID(
     account: aptos.AptosAccount,
   ): Promise<string> {
     const payload = this.txBuilder.buildTransactionPayload(
@@ -112,18 +112,18 @@ export class AptIDClient {
    *
    * @returns The hash of the transaction submitted to the API
    */
-  async initialize_name_owner_store(
+  async initNameOwnerStore(
     account: aptos.AptosAccount,
   ): Promise<string> {
     const payload = this.txBuilder.buildTransactionPayload(
-      this.typeName("apt_id", "initialize_name_owner_store"),
+      this.typeName("apt_id", "initNameOwnerStore"),
       [],
       [],
     );
     return this.aptosClient.generateSignSubmitTransaction(account, payload, this.txArgs);
   }
 
-  async direct_transfer(
+  async directTransfer(
     account: aptos.AptosAccount,
     to: aptos.MaybeHexString,
     name: string,
@@ -137,7 +137,7 @@ export class AptIDClient {
     return this.aptosClient.generateSignSubmitTransaction(account, payload, this.txArgs);
   }
 
-  async upsert_record(
+  async upsertRecrod(
     account: aptos.AptosAccount,
     tld: string,
     name: string,
@@ -197,7 +197,7 @@ export class AptIDClient {
   /**
    * Returns lable hash
    */
-  public static get_label_hash(lable: string): string {
+  public static getLableHash(lable: string): string {
     const hash = keccak256.keccak256(aptos.BCS.bcsSerializeStr(lable).buffer);
     return "0x" + hash;
   }
@@ -205,9 +205,9 @@ export class AptIDClient {
   /**
    * Returns name_hash of name.tld
    */
-  public static get_name_hash(name: string, tld: string) {
-    const tld_hash = AptIDClient.get_label_hash(tld);
-    const name_lable_hash = AptIDClient.get_label_hash(name);
+  public static getNameHash(name: string, tld: string) {
+    const tld_hash = AptIDClient.getLableHash(tld);
+    const name_lable_hash = AptIDClient.getLableHash(name);
     const name_hash = keccak256.keccak256(
       new Uint8Array([...arrayify(tld_hash), ...arrayify(name_lable_hash)])
     );
@@ -217,7 +217,7 @@ export class AptIDClient {
   public async getOwnerAndName(name: string, tld: string):
     Promise<[string, Name] | null> {
     try {
-      const hash = AptIDClient.get_name_hash(name, tld);
+      const hash = AptIDClient.getNameHash(name, tld);
       const ownerListStore: { type: aptos.Types.MoveStructTag; data: any } = await
         this.aptosClient.getAccountResource(
           this.aptidModAddr,

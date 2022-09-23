@@ -24,7 +24,7 @@ const faucetDevnet = async() => {
 
 const deployInit = async (aptID: AptIDClients) => {
   await faucetClient.fundAccount(modAccount.address(), 1000_000000);
-  let hash = await aptID.aptid.init_aptid(modAccount);
+  let hash = await aptID.aptid.initAptID(modAccount);
   await client.waitForTransaction(hash);
   let tx = await client.getTransactionByHash(hash)
   console.log("init apt_id protocol tx: ", tx)
@@ -65,7 +65,7 @@ const e2e_script = async (clients: AptIDClients) => {
   await client.waitForTransaction(await clients.dotapt.renew(alice, 1000, ilovealice));
 
   // set reversed record.
-  let hash = await clients.dotapt.update_reversed_record(alice, imalice);
+  let hash = await clients.dotapt.updateReversedRecord(alice, imalice);
   await client.waitForTransaction(hash);
   let tx = await client.getTransactionByHash(hash)
   // console.log("set reversed record tx: ", tx)
@@ -77,15 +77,15 @@ const e2e_script = async (clients: AptIDClients) => {
   console.log("alcie names in aptView, ", apt_view);
 
   // init name store for bob
-  await client.waitForTransaction(await clients.aptid.initialize_name_owner_store(bob));
+  await client.waitForTransaction(await clients.aptid.initNameOwnerStore(bob));
   // transfer to a name to bob
-  await client.waitForTransaction(await clients.aptid.direct_transfer(alice, bob.address(), forBob, "apt"));
-  await client.waitForTransaction(await clients.dotapt.update_reversed_record(bob, forBob));
+  await client.waitForTransaction(await clients.aptid.directTransfer(alice, bob.address(), forBob, "apt"));
+  await client.waitForTransaction(await clients.dotapt.updateReversedRecord(bob, forBob));
 
   // update records
-  await client.waitForTransaction(await clients.aptid.upsert_record(bob, "apt", forBob, "@", "A", 600, "192.168.0.1"))
-  await client.waitForTransaction(await clients.aptid.upsert_record(bob, "apt", forBob, "@", "MX", 600, "gmail"))
-  await client.waitForTransaction(await clients.aptid.upsert_record(bob, "apt", forBob, "@", "Address", 600, bob.address().toShortString()))
+  await client.waitForTransaction(await clients.aptid.upsertRecrod(bob, "apt", forBob, "@", "A", 600, "192.168.0.1"))
+  await client.waitForTransaction(await clients.aptid.upsertRecrod(bob, "apt", forBob, "@", "MX", 600, "gmail"))
+  await client.waitForTransaction(await clients.aptid.upsertRecrod(bob, "apt", forBob, "@", "Address", 600, bob.address().toShortString()))
 
   const bob_names = await clients.aptid.listNames(bob.address());
   console.log("bob names", bob_names);

@@ -38,7 +38,7 @@ export class DotAptClient {
     };
   }
 
-  private type_id(pkg: string, id: string) {
+  private typeID(pkg: string, id: string) {
     return this.dot_apt_mod_address + "::" + pkg + "::" + id;
   }
 
@@ -73,7 +73,7 @@ export class DotAptClient {
     mod: string,
   ): Promise<string> {
     const payload = this.txBuilder.buildTransactionPayload(
-      this.type_id(mod, "onboard"),
+      this.typeID(mod, "onboard"),
       [],
       [],
     );
@@ -85,7 +85,7 @@ export class DotAptClient {
     mod: string,
   ): Promise<string> {
     const payload = this.txBuilder.buildTransactionPayload(
-      this.type_id(mod, "resign"),
+      this.typeID(mod, "resign"),
       [],
       [],
     );
@@ -110,7 +110,7 @@ export class DotAptClient {
       throw "amount too little";
     }
     const payload = this.txBuilder.buildTransactionPayload(
-      this.type_id("one_coin_registrar", "register_script"),
+      this.typeID("one_coin_registrar", "register_script"),
       [],
       [amount, name],
     );
@@ -135,7 +135,7 @@ export class DotAptClient {
       throw "amount too little";
     }
     const payload = this.txBuilder.buildTransactionPayload(
-      this.type_id("one_coin_registrar", "renew_script"),
+      this.typeID("one_coin_registrar", "renew_script"),
       [],
       [amount, name],
     );
@@ -143,7 +143,7 @@ export class DotAptClient {
   }
 
   /**
-   * update_reversed_record
+   * updateReversedRecord
    *
    * @param account user account
    * @param aptName The address.reverse will set its (.apt, TXT) resource record
@@ -151,12 +151,12 @@ export class DotAptClient {
    *
    * @returns The hash of the transaction submitted to the API
    */
-  async update_reversed_record(
+  async updateReversedRecord(
     account: aptos.AptosAccount,
     aptName: string,
   ): Promise<string> {
     const payload = this.txBuilder.buildTransactionPayload(
-      this.type_id("reverse_registrar", "set_reversed_name_script"),
+      this.typeID("reverse_registrar", "set_reversed_name_script"),
       [],
       [aptName],
     );
@@ -171,10 +171,10 @@ export class DotAptClient {
       }
     }
     let apt_names = names.filter((n: Name) => {
-      return n.parent.hash === AptIDClient.get_label_hash("apt");
+      return n.parent.hash === AptIDClient.getLableHash("apt");
     });
     let reversed_names = names.filter((n: Name) => {
-      return n.parent.hash === AptIDClient.get_label_hash("reverse");
+      return n.parent.hash === AptIDClient.getLableHash("reverse");
     });
     let reversed_name = reversed_names.length > 0 ? reversed_names[0] : null;
     if (reversed_name) {

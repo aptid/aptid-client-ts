@@ -31,7 +31,7 @@ const faucetClient = new FaucetClient(NODE_URL, FAUCET_URL);
       alice, 1, love_addr));
 
   // set reversed record.
-  await client.waitForTransaction(await devnetClients.dotapt.update_reversed_record(alice, alice_addr));
+  await client.waitForTransaction(await devnetClients.dotapt.updateReversedRecord(alice, alice_addr));
 
   // list all names registerd
   const rst = await devnetClients.aptid.listNames(alice.address())
