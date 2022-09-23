@@ -7,7 +7,7 @@ export interface Config {
   aptid_id: string,
   dot_apt_tld: string,
   abis: string[],
-};
+}
 
 const local_addr = "0xf71cb5dc58c4290a2cc009ba5c87f389ca624e1d6b9b9135c2b4c43c1bb69cb6";
 export const local_config: Config = {

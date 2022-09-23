@@ -16,16 +16,16 @@ interface TxExtraArgs {
 export type { TxExtraArgs }
 interface NameID {
   hash: string
-};
+}
 
 interface RecordKey {
-  name: String,
-  type: String,
+  name: string,
+  type: string,
 }
 
 interface RecordValue {
   ttl: number,
-  value: String,
+  value: string,
 }
 
 interface Name {
@@ -34,7 +34,7 @@ interface Name {
   parent: NameID,
   transferable: boolean,
   records: IterableTable<RecordKey, RecordValue>,
-};
+}
 
 export type { NameID, Name, RecordKey, RecordValue };
 
@@ -232,7 +232,7 @@ export class AptIDClient {
         },
       });
       // leverage list names to filter out expired names.
-      let names = await this.listNames(address);
+      const names = await this.listNames(address);
       names.filter(n => n.name == hash);
       if (names.length > 0) {
         return [address, names[0]];

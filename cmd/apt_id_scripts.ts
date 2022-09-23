@@ -24,12 +24,12 @@ const faucetDevnet = async() => {
 
 const deployInit = async (aptID: AptIDClients) => {
   await faucetClient.fundAccount(modAccount.address(), 1000_000000);
-  let hash = await aptID.aptid.initAptID(modAccount);
+  const hash = await aptID.aptid.initAptID(modAccount);
   await client.waitForTransaction(hash);
   let tx = await client.getTransactionByHash(hash)
   console.log("init apt_id protocol tx: ", tx)
 
-  let hashes = await aptID.dotapt.onboard(modAccount);
+  const hashes = await aptID.dotapt.onboard(modAccount);
   tx = await client.getTransactionByHash(hashes.oneCoin)
   console.log("onboard .apt TLD registrar tx: ", tx)
   tx = await client.getTransactionByHash(hashes.reverse)
@@ -37,10 +37,10 @@ const deployInit = async (aptID: AptIDClients) => {
 }
 
 const register_names = async (aptID: AptIDClients, account: any, names: string[]) => {
-  for (let name of names) {
-    let hash = await aptID.dotapt.register(account, 1000, name);
+  for (const name of names) {
+    const hash = await aptID.dotapt.register(account, 1000, name);
     await client.waitForTransaction(hash);
-    let tx = await client.getTransactionByHash(hash)
+    const tx = await client.getTransactionByHash(hash)
     // console.log("name register tx: ", tx)
   }
 }
@@ -65,9 +65,9 @@ const e2e_script = async (clients: AptIDClients) => {
   await client.waitForTransaction(await clients.dotapt.renew(alice, 1000, ilovealice));
 
   // set reversed record.
-  let hash = await clients.dotapt.updateReversedRecord(alice, imalice);
+  const hash = await clients.dotapt.updateReversedRecord(alice, imalice);
   await client.waitForTransaction(hash);
-  let tx = await client.getTransactionByHash(hash)
+  const tx = await client.getTransactionByHash(hash)
   // console.log("set reversed record tx: ", tx)
 
 

@@ -59,7 +59,7 @@ export class IterableTableClient<K, V> {
     return this.modAddr + "::iterable_table::IterableValue<" + this.keyTypeName + "," + this.valueTypeName + ">";
   }
 
-  public async getIterableValue(key: K, ledgerVersion?: BigInt): Promise<IterableValue<K, V> | null> {
+  public async getIterableValue(key: K, ledgerVersion?: bigint): Promise<IterableValue<K, V> | null> {
     try {
       const v: IterableValue<K, V> = await this.cli.getTableItem(
         this.tb.inner.inner.handle,
@@ -84,7 +84,7 @@ export class IterableTableClient<K, V> {
     }
   }
 
-  public async get(key: K, ledgerVersion?: BigInt): Promise<V | null> {
+  public async get(key: K, ledgerVersion?: bigint): Promise<V | null> {
     const v = await this.getIterableValue(key, ledgerVersion);
     if (v == null) {
       return null

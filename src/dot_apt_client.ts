@@ -48,9 +48,9 @@ export class DotAptClient {
   * @param aptosClient apt_id::apt_id publisher account.
   */
   public async onboard(account: aptos.AptosAccount) {
-    let oneCoin = await this._onboard(account, "one_coin_registrar");
+    const oneCoin = await this._onboard(account, "one_coin_registrar");
     await this.cli.waitForTransaction(oneCoin);
-    let reverse = await this._onboard(account, "reverse_registrar");
+    const reverse = await this._onboard(account, "reverse_registrar");
     await this.cli.waitForTransaction(reverse);
     return { oneCoin, reverse }
   }
@@ -61,9 +61,9 @@ export class DotAptClient {
   * @param aptosClient apt_id::apt_id publisher account.
   */
   public async resign(account: aptos.AptosAccount) {
-    let oneCoin = await this._resign(account, "one_coin_registrar");
+    const oneCoin = await this._resign(account, "one_coin_registrar");
     await this.cli.waitForTransaction(oneCoin);
-    let reverse = await this._resign(account, "reverse_registrar");
+    const reverse = await this._resign(account, "reverse_registrar");
     await this.cli.waitForTransaction(reverse);
     return { oneCoin, reverse }
   }
@@ -170,23 +170,23 @@ export class DotAptClient {
         reversed: null,
       }
     }
-    let apt_names = names.filter((n: Name) => {
+    const apt_names = names.filter((n: Name) => {
       return n.parent.hash === AptIDClient.getLableHash("apt");
     });
-    let reversed_names = names.filter((n: Name) => {
+    const reversed_names = names.filter((n: Name) => {
       return n.parent.hash === AptIDClient.getLableHash("reverse");
     });
-    let reversed_name = reversed_names.length > 0 ? reversed_names[0] : null;
-    if (reversed_name) {
-      // reversed record does not match name.
-      if (!apt_names.some((n: Name) => {
-        // TODO: support iterable_table.
-        // return n.name == reversed_name.records[[".apt", "TXT"];
-        return true;
-      })) {
-        reversed_name = null;
-      }
-    }
+    const reversed_name = reversed_names.length > 0 ? reversed_names[0] : null;
+    // if (reversed_name) {
+    //   // reversed record does not match name.
+    //   if (!apt_names.some((n: Name) => {
+    //     // TODO: support iterable_table.
+    //     // return n.name == reversed_name.records[[".apt", "TXT"];
+    //     return true;
+    //   })) {
+    //     reversed_name = null;
+    //   }
+    // }
     return {
       apt_names: apt_names,
       reversed: reversed_name,
