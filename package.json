@@ -1,8 +1,9 @@
 {
   "name": "aptid-ts",
   "version": "0.1.0",
-  "description": "",
-  "main": "src/index.ts",
+  "description": "AptID TypeScript SDK.",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
     "local-aptid": "NODE_ENV=local ts-node cmd/apt_id_scripts.ts",
     "devnet-aptid": "NODE_ENV=devnet ts-node cmd/apt_id_scripts.ts",
@@ -16,7 +17,7 @@
     "type": "git",
     "url": "git+https://github.com/aptid/aptid-client-ts.git"
   },
-  "keywords": [],
+  "keywords": ["Aptos", "AptID"],
   "author": "Apt ID",
   "license": "MIT",
   "bugs": {
