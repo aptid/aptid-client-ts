@@ -41,7 +41,7 @@ const register_names = async (aptID: AptIDClients, account: any, names: string[]
     const hash = await aptID.dotapt.register(account, 1000, name);
     await client.waitForTransaction(hash);
     const tx = await client.getTransactionByHash(hash)
-    // console.log("name register tx: ", tx)
+    console.log("name register tx: ", tx)
   }
 }
 
@@ -60,16 +60,17 @@ const e2e_script = async (clients: AptIDClients) => {
   const ilovealice = "ILove" + short;
   const forBob = "For" + bobShort;
   await register_names(clients, alice, [imalice, ilovealice, forBob]);
+  console.log("name register okay")
 
   // renew
   await client.waitForTransaction(await clients.dotapt.renew(alice, 1000, ilovealice));
+  console.log("renew okay")
 
   // set reversed record.
   const hash = await clients.dotapt.updateReversedRecord(alice, imalice);
   await client.waitForTransaction(hash);
   const tx = await client.getTransactionByHash(hash)
-  // console.log("set reversed record tx: ", tx)
-
+  console.log("set reversed record tx: ", tx)
 
   // list all names
   const rst = await clients.aptid.listNames(alice.address());
@@ -103,7 +104,7 @@ const e2e_script = async (clients: AptIDClients) => {
   // .... Aptos typescript SDK has a bug that if the account address
   // has leading zeros, it will fail to find the corresponding function.
   // await faucetDevnet();
-  // const devnetClients = makeClients(client, devnet_config)
+  const devnetClients = makeClients(client, devnet_config)
   // deployInit(devnetClients);
-  // e2e_script(devnetClients);
+  e2e_script(devnetClients);
 })();
