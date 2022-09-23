@@ -8,8 +8,7 @@
     "devnet-aptid": "NODE_ENV=devnet ts-node cmd/apt_id_scripts.ts",
     "example": "NODE_ENV=devnet ts-node cmd/register_names_set_reverse_and_list.ts",
     "build": "tsc",
-    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
-    "lint": "tslint -p tsconfig.json"
+    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\""
   },
   "repository": {
     "type": "git",
@@ -34,8 +33,6 @@
     "prettier": "^2.7.1",
     "ts-node": "^10.9.1",
     "tslib": "^2.4.0",
-    "tslint": "^6.1.3",
-    "tslint-config-prettier": "^1.18.0",
     "typescript": "4.8.2"
   }
 }
