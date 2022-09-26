@@ -7,6 +7,8 @@ import * as aptos from 'aptos';
 import { IterableTableClient } from './iterable_table';
 import { Name, NameID, RecordKey, RecordValue, TxExtraArgs, WalletPayloadArgs } from './common';
 
+interface TypeStore<T> { type: aptos.Types.MoveStructTag; data: T }
+
 /**
  * AptIDClient work with the main module of AptID protocol: apt_id::apt_id.
  */
@@ -74,7 +76,7 @@ export class AptIDClient {
    *
    * @returns The hash of the transaction submitted to the API
    */
-  async initNameOwnerStore(account: aptos.AptosAccount): Promise<string> {
+  public async initNameOwnerStore(account: aptos.AptosAccount): Promise<string> {
     const payload = this.txBuilder.buildTransactionPayload(this.typeName('initialize_name_owner_store'), [], []);
     return this.aptosClient.generateSignSubmitTransaction(account, payload, this.txArgs);
   }
@@ -107,7 +109,7 @@ export class AptIDClient {
     };
   }
 
-  async upsertRecrod(
+  public async upsertRecrod(
     account: aptos.AptosAccount,
     tld: string,
     name: string,
@@ -141,7 +143,7 @@ export class AptIDClient {
   }
 
   // @returns empty array if the name cannot be found.
-  async getRecords(name: Name): Promise<[RecordKey, RecordValue][]> {
+  public async getRecords(name: Name): Promise<[RecordKey, RecordValue][]> {
     const tb = new IterableTableClient(
       this.aptosClient,
       this.aptidModAddr,
@@ -152,15 +154,23 @@ export class AptIDClient {
     return await tb.items();
   }
 
+  private async getNameOwnerStore(addr: aptos.MaybeHexString): Promise<TypeStore<any>> {
+    return await this.aptosClient.getAccountResource(
+      addr,
+      this.typeName('NameOwnerStore'),
+    );
+  }
+
+  public static isNameExpired(name: Name): boolean {
+    return parseInt(name.expired_at) < ((+ new Date()) / 1000)
+  }
+
   /**
-   * Returns all names owned by the owner, including the reversed mapping name.
+   * Returns all names owned by the owner, non-expired, including the reversed mapping name.
    */
-  async listNames(ownerAddr: aptos.MaybeHexString): Promise<Name[]> {
+  public async listNames(ownerAddr: aptos.MaybeHexString): Promise<Name[]> {
     try {
-      const nameStore: { type: aptos.Types.MoveStructTag; data: any } = await this.aptosClient.getAccountResource(
-        ownerAddr,
-        this.typeName('NameOwnerStore'),
-      );
+      const nameStore = await this.getNameOwnerStore(ownerAddr);
       const namesCli = new IterableTableClient<NameID, Name>(
         this.aptosClient,
         this.aptidModAddr,
@@ -170,7 +180,7 @@ export class AptIDClient {
       );
       const nameItems = await namesCli.items();
       const names: Name[] = nameItems.map((idName) => idName[1]);
-      return names;
+      return names.filter((name) => !AptIDClient.isNameExpired(name));
     } catch (e) {
       if (e instanceof aptos.ApiError) {
         return [];
@@ -199,36 +209,46 @@ export class AptIDClient {
     return '0x' + name_hash;
   }
 
-  public async getOwnerAndName(name: string, tld: string): Promise<[string, Name] | null> {
-    try {
-      const hash = AptIDClient.getNameHash(name, tld);
-      const ownerListStore: { type: aptos.Types.MoveStructTag; data: any } = await this.aptosClient.getAccountResource(
+  public async getOwnerAndName(name: string, tld: string, ownerAddr?: aptos.MaybeHexString): Promise<[string, Name] | null> {
+    const hash = AptIDClient.getNameHash(name, tld);
+    return await this.getOwnerAndNameByHash(hash, ownerAddr);
+  }
+
+  public async getOwnerAndNameByHash(hash: string, ownerAddr?: aptos.MaybeHexString): Promise<[string, Name] | null> {
+    if (!ownerAddr) {
+      const ownerListStore: TypeStore<any> = await this.aptosClient.getAccountResource(
         this.aptidModAddr,
         this.typeName('OwnerListStore'),
       );
       const { handle }: { handle: string } = ownerListStore.data.owners;
-      const address = await this.aptosClient.getTableItem(handle, {
-        key_type: this.NameIDTypeName(),
-        value_type: 'address',
-        key: {
-          hash: hash,
-        },
-      });
-      // leverage list names to filter out expired names.
-      const names = await this.listNames(address);
-      names.filter((n) => n.name == hash);
-      if (names.length > 0) {
-        return [address, names[0]];
+      try {
+        ownerAddr = await this.aptosClient.getTableItem(handle, {
+          key_type: this.NameIDTypeName(),
+          value_type: 'address',
+          key: {
+            hash: hash,
+          },
+        });
+      } catch {
+        ownerAddr = null;
+      }
+    }
+    if (!ownerAddr) {
+      return null;
+    }
+    const ownerStore = await this.getNameOwnerStore(ownerAddr);
+    const handle = ownerStore.data.names;
+    const tb = new IterableTableClient<NameID, Name>(
+      this.aptosClient, this.aptidModAddr, handle, this.NameIDTypeName(), this.NameTypeName());
+    try {
+      const name = await tb.getIterableValue({ hash })
+      if (!AptIDClient.isNameExpired(name.val)) {
+        return [ownerAddr as string, name.val];
       } else {
         return null;
       }
-    } catch (e) {
-      if (e instanceof aptos.ApiError) {
-        return null;
-      } else {
-        console.error('getOwnerAndName', e);
-        throw e;
-      }
+    } catch {
+      return null;
     }
   }
 
@@ -238,5 +258,29 @@ export class AptIDClient {
   public async isNameAvailable(name: string, tld: string): Promise<boolean> {
     const ownerAndName = await this.getOwnerAndName(name, tld);
     return ownerAndName === null;
+  }
+
+  /**
+   * Returns true if the name is available for registration.
+   * list all unexpired names.
+   */
+  public async listAllNamesByDepositEvents(start: number | bigint, limit: number): Promise<Name[]> {
+    const events = await this.aptosClient.getEventsByEventHandle(
+      this.aptidModAddr,
+      this.typeName('OwnerListStore'),
+      "deposit_events",
+      {
+        start,
+        limit,
+      });
+    const names: (Name | null)[] = await Promise.all<Name | null>(
+      events.map(async (v) => {
+        const ownerAddr = v.data.to;
+        const hash = v.data.id.hash;
+        const ownerName = await this.getOwnerAndNameByHash(hash, ownerAddr);
+        if (!ownerName) { return null; }
+        return ownerName[1];
+      }));
+    return names.filter(n => n != null);
   }
 }
