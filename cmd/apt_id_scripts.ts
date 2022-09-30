@@ -7,7 +7,7 @@ assert(NODE_URL != undefined)
 assert(FAUCET_URL != undefined)
 
 import { AptosClient, AptosAccount, CoinClient, FaucetClient, HexString } from "aptos";
-import { AptIDClient, DotAptClient, makeDevnetClients ,AptIDClients, makeLocalClients  } from "../src";
+import { AptIDClient, DotAptClient, makeTestnetClients, makeDevnetClients ,AptIDClients, makeLocalClients  } from "../src";
 import { devnetConfig } from "../src/config";
 
 // Create API and faucet clients.
@@ -102,7 +102,12 @@ const e2e_script = async (clients: AptIDClients) => {
   // e2e_script(localClients);
 
   // await faucetDevnet();
-  const devnetClients = makeDevnetClients(NODE_URL)
-  deployInit(devnetClients);
-  e2e_script(devnetClients);
+  // const devnetClients = makeDevnetClients(NODE_URL)
+  // deployInit(devnetClients);
+  // e2e_script(devnetClients);
+
+  await faucetDevnet();
+  const clients = makeTestnetClients(NODE_URL)
+  deployInit(clients);
+  e2e_script(clients);
 })();
